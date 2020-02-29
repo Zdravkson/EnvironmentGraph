@@ -1,28 +1,58 @@
-
-import random
-from itertools import count
-import pandas as pd
+#!/usr/bin/env python3
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import serial
+from sys import argv
+from random import randint
+from time import sleep
 
+
+# Checks if all arguments there
+if len(argv) != 3:
+    print("python3 [PORT] [BAUD RATE]")
+    exit()
+
+# Apply theme for matplotlib
 plt.style.use('fivethirtyeight')
 
-x_vals = []
-y_vals = []
 
-index = count()
+# Initialize serial communication with arduino
+arduino_serial = serial.Serial()
+arduino_serial.baudrate = int(argv[2])
+arduino_serial.port = argv[1]
+arduino_serial.open()
+
+# Default all to 0
+temperature = []
+humidity = []
+heat_index = []
+
+# Ignore first 3 line
+for i in range(5):
+    arduino_serial.readline()
 
 
 def animate(i):
-    data = pd.read_csv('data.csv')
-    x = data['x_value']
-    y1 = data['total_1']
-    y2 = data['total_2']
-
     plt.cla()
+    try:
+        raw_data = arduino_serial.readline().decode(
+            "utf-8").replace("\r\n", "").split(",")
+        temperature.append(raw_data[0])
+        humidity.append(raw_data[1])
+        heat_index.append(raw_data[2])
 
-    plt.plot(x, y1, label='Channel 1')
-    plt.plot(x, y2, label='Channel 2')
+        print(raw_data)
+
+    except:
+        pass
+
+    x1 = list(range(len(temperature)))
+    x2 = list(range(len(humidity)))
+    x3 = list(range(len(heat_index)))
+
+    plt.plot(x1, temperature, label='Температура')
+    plt.plot(x2, humidity, label='Влажност ваздуха')
+    plt.plot(x3, heat_index, label='Реалан осећај температуре')
 
     plt.legend(loc='upper left')
     plt.tight_layout()
